@@ -29,11 +29,12 @@ class GasPriceRepository(private val apiService: ApiService) {
         }.reversed().joinToString(",")
     }
 
-    suspend fun fetchGasPrices(){
+    suspend fun fetchGasPrices(): GasPricesResponse {
         val weeks = getLast30Weeks()
         val response = apiService.getGasPrices(weeks)
         if (response.isSuccessful && response.body() != null) {
-            _gasPrices.postValue(response.body()!!)
+            // The ViewModel will now update its LiveData directly with this response
+            return response.body()!!
         } else {
             val error = response.errorBody()?.string()
             throw Exception("Error fetching gas prices: $error")

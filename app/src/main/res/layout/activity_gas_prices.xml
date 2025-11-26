@@ -3,35 +3,140 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/textViewStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gas Prices"
-        android:textSize="20sp"
-        android:layout_gravity="center_horizontal"/>
-
-    <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/chart"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"/>
+        <!-- Header: Title + Switch -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="4dp">
 
-    <TextView
-        android:id="@+id/textViewSourceNotice"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Data source: http://datacube.statistics.sk/"
-        android:textSize="14sp"
-        android:gravity="center_horizontal"
-        android:paddingTop="8dp"/>
+            <TextView
+                android:id="@+id/textViewStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Gas Prices"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/switchDarkMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dark Mode" />
+        </LinearLayout>
+
+        <!-- Current Prices Dashboard -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp"
+            android:baselineAligned="false">
+
+            <!-- 95 Octane -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Natural 95"
+                    android:textSize="12sp"
+                    android:alpha="0.7"/>
+                <TextView
+                    android:id="@+id/tvPrice95"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-.--- €"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFC107"/> <!-- Amber/Orange color -->
+            </LinearLayout>
+
+            <!-- 98 Octane -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Natural 98"
+                    android:textSize="12sp"
+                    android:alpha="0.7"/>
+                <TextView
+                    android:id="@+id/tvPrice98"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-.--- €"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#4CAF50"/> <!-- Green color -->
+            </LinearLayout>
+
+            <!-- Diesel -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Diesel"
+                    android:textSize="12sp"
+                    android:alpha="0.7"/>
+                <TextView
+                    android:id="@+id/tvPriceDiesel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-.--- €"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2196F3"/> <!-- Blue color -->
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"/>
+
+        <TextView
+            android:id="@+id/textViewSourceNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Data source: http://datacube.statistics.sk/"
+            android:textSize="12sp"
+            android:gravity="center_horizontal"
+            android:paddingTop="8dp"
+            android:alpha="0.5"/>
+
+    </LinearLayout>
 
 </LinearLayout>
