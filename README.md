@@ -22,7 +22,7 @@ Dáta o cenách palív sú získavané z oficiálneho zdroja:
 
 1.  **Klonujte repozitár:**
     ```bash
-    git clone https://github.com/your-username/gas_prices.git
+    git clone https://github.com/Darxie/gas_prices.git
     cd gas_prices
     ```
 2.  **Otvorte v Android Studio:** Otvorte projekt v Android Studio.
