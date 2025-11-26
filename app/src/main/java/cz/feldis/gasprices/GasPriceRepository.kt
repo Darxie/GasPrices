@@ -13,10 +13,14 @@ class GasPriceRepository(private val apiService: ApiService) {
     private val _gasPrices = MutableLiveData<GasPricesResponse>()
     val gasPrices: LiveData<GasPricesResponse> get() = _gasPrices
 
+    /**
+     * Generates a comma-separated string of the last 30 weeks in the `yyyyww` format.
+     * This format is required by the data.statistics.sk API.
+     */
     private fun getLast30Weeks(): String {
         val today = LocalDate.now().minusWeeks(1)
         val weekFields = WeekFields.of(Locale.getDefault())
-        val weekOfYearFormatter = DateTimeFormatter.ofPattern("YYYYww")
+        val weekOfYearFormatter = DateTimeFormatter.ofPattern("yyyyww")
 
         return (1..30).map { i ->
             today.minusWeeks(i.toLong())
@@ -25,11 +29,12 @@ class GasPriceRepository(private val apiService: ApiService) {
         }.reversed().joinToString(",")
     }
 
-    suspend fun fetchGasPrices(){
+    suspend fun fetchGasPrices(): GasPricesResponse {
         val weeks = getLast30Weeks()
         val response = apiService.getGasPrices(weeks)
         if (response.isSuccessful && response.body() != null) {
-            _gasPrices.postValue(response.body()!!)
+            // The ViewModel will now update its LiveData directly with this response
+            return response.body()!!
         } else {
             val error = response.errorBody()?.string()
             throw Exception("Error fetching gas prices: $error")

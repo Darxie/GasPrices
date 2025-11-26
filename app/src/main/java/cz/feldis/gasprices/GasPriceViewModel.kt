@@ -5,18 +5,22 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.feldis.gasprices.models.GasPricesResponse
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class GasPriceViewModel(private val repository: GasPriceRepository) : ViewModel() {
+class GasPriceViewModel(private val repository: GasPriceRepository, private val dispatcher: CoroutineDispatcher = Dispatchers.IO) : ViewModel() {
 
-    val gasPrices: LiveData<GasPricesResponse> = repository.gasPrices
+    private val _gasPrices = MutableLiveData<GasPricesResponse?>()
+    val gasPrices: LiveData<GasPricesResponse?> = _gasPrices
 
     fun loadGasPrices() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             try {
-                repository.fetchGasPrices()
+                val response = repository.fetchGasPrices()
+                _gasPrices.postValue(response)
             } catch (e: Exception) {
-                // Handle any exceptions by updating the UI accordingly
+                _gasPrices.postValue(null)
             }
         }
     }
