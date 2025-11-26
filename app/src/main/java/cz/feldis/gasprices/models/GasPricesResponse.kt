@@ -9,7 +9,7 @@ data class GasPricesResponse(
     val update: String,
     val href: String,
     val dimension: Dimension,
-    val value: List<Float>
+    val value: List<Float?>
 )
 
 data class Dimension(

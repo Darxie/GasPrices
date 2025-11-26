@@ -60,34 +60,34 @@ class GasPricesActivity : AppCompatActivity() {
         val weeksLabels = gasPricesResponse.dimension.sp0207ts_tyz.category.label.values.toList()
         val values = gasPricesResponse.value
 
-        val prices95 = values.filterIndexed { index, _ -> index % 3 == 0 }
-        val prices98 = values.filterIndexed { index, _ -> index % 3 == 1 }
-        val dieselPrices = values.filterIndexed { index, _ -> index % 3 == 2 }
+        val entries95 = createEntries(values, 0)
+        val entries98 = createEntries(values, 1)
+        val entriesDiesel = createEntries(values, 2)
 
-        val dataSet95 = LineDataSet(createEntries(prices95), "95 Octane").apply {
+        val dataSet95 = LineDataSet(entries95, "95 Octane").apply {
             color = ColorTemplate.VORDIPLOM_COLORS[0]
             lineWidth = 5f
         }
-        val dataSet98 = LineDataSet(createEntries(prices98), "98 Octane").apply {
+        val dataSet98 = LineDataSet(entries98, "98 Octane").apply {
             color = ColorTemplate.VORDIPLOM_COLORS[1]
             lineWidth = 5f
         }
-        val dataSetDiesel = LineDataSet(createEntries(dieselPrices), "Diesel").apply {
+        val dataSetDiesel = LineDataSet(entriesDiesel, "Diesel").apply {
             color = ColorTemplate.VORDIPLOM_COLORS[2]
             lineWidth = 5f
         }
 
-        val entries95 = getEntriesFromDataSet(dataSet95)
+        val entries95FromDataSet = getEntriesFromDataSet(dataSet95)
         val entries98 = getEntriesFromDataSet(dataSet98)
         val entriesDiesel = getEntriesFromDataSet(dataSetDiesel)
 
-        val regressionDataSet95 = calculateRegressionLine(entries95)
+        val regressionDataSet95FromEntries = calculateRegressionLine(entries95FromDataSet)
         val regressionDataSet98 = calculateRegressionLine(entries98)
         val regressionDataSetDiesel = calculateRegressionLine(entriesDiesel)
 
         val lineData = LineData()
         lineData.addDataSet(dataSet95)
-//        lineData.addDataSet(regressionDataSet95)
+//        lineData.addDataSet(regressionDataSet95FromEntries)
 
 
         lineData.addDataSet(dataSet98)
@@ -104,9 +104,13 @@ class GasPricesActivity : AppCompatActivity() {
         lineChart.invalidate()
     }
 
-    private fun createEntries(prices: List<Float?>): List<Entry> {
+    private fun createEntries(prices: List<Float?>, typeIndex: Int): List<Entry> {
         return prices.mapIndexedNotNull { index, price ->
-            price?.let { Entry(index.toFloat(), it) }
+            if (index % 3 == typeIndex) {
+                price?.let { Entry((index / 3).toFloat(), it) }
+            } else {
+                null
+            }
         }
     }
 
