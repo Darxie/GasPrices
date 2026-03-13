@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">Gas prices</string>
+    <string name="octane_95_label">95 Octane</string>
+    <string name="octane_98_label">98 Octane</string>
+    <string name="diesel_label">Diesel</string>
+    <string name="source_notice">Data source: http://datacube.statistics.sk/</string>
+    <string name="refresh_prices">Refresh prices</string>
+    <string name="toggle_trend_lines">Toggle trend lines</string>
+    <string name="share_prices">Share latest prices</string>
+    <string name="share_prompt">Share fuel prices</string>
+    <string name="loading_status">Loading latest prices…</string>
+    <string name="updated_label">Updated: %1$s</string>
+    <string name="data_not_ready_message">Data has not been loaded yet.</string>
+    <string name="no_data_available">No historical data available.</string>
+    <string name="not_available_label">N/A</string>
+    <string name="price_label">Price</string>
+    <string name="marker_week_value_template">%1$s\n%2$s\n%3$s EUR/l</string>
+    <string name="source_label">Source: %1$s</string>
 </resources>

@@ -18,13 +18,13 @@ class GasPriceRepository(private val apiService: ApiService) {
      * This format is required by the data.statistics.sk API.
      */
     private fun getLast30Weeks(): String {
-        val today = LocalDate.now().minusWeeks(1)
         val weekFields = WeekFields.of(Locale.getDefault())
         val weekOfYearFormatter = DateTimeFormatter.ofPattern("yyyyww")
+        val currentWeekStart = LocalDate.now()
+            .with(weekFields.dayOfWeek(), 1L)
 
-        return (1..30).map { i ->
-            today.minusWeeks(i.toLong())
-                .with(weekFields.dayOfWeek(), 1L) // Ensure we are at the start of the week
+        return (0 until 30).map { i ->
+            currentWeekStart.minusWeeks(i.toLong())
                 .format(weekOfYearFormatter)
         }.reversed().joinToString(",")
     }

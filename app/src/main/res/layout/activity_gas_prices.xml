@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        app:title="@string/app_name"
+        app:titleTextColor="@android:color/white" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -11,29 +22,14 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Header: Title + Switch -->
-        <LinearLayout
+        <!-- Header -->
+        <TextView
+            android:id="@+id/textViewStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingBottom="4dp">
-
-            <TextView
-                android:id="@+id/textViewStatus"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Gas Prices"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <Switch
-                android:id="@+id/switchDarkMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Dark Mode" />
-        </LinearLayout>
+            android:text="@string/app_name"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
         <!-- Current Prices Dashboard -->
         <LinearLayout
@@ -54,9 +50,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Natural 95"
+                    android:text="@string/octane_95_label"
                     android:textSize="12sp"
-                    android:alpha="0.7"/>
+                    android:alpha="0.7" />
                 <TextView
                     android:id="@+id/tvPrice95"
                     android:layout_width="wrap_content"
@@ -64,7 +60,7 @@
                     android:text="-.--- €"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#FFC107"/> <!-- Amber/Orange color -->
+                    android:textColor="#FFC107" />
             </LinearLayout>
 
             <!-- 98 Octane -->
@@ -77,9 +73,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Natural 98"
+                    android:text="@string/octane_98_label"
                     android:textSize="12sp"
-                    android:alpha="0.7"/>
+                    android:alpha="0.7" />
                 <TextView
                     android:id="@+id/tvPrice98"
                     android:layout_width="wrap_content"
@@ -87,7 +83,7 @@
                     android:text="-.--- €"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#4CAF50"/> <!-- Green color -->
+                    android:textColor="#4CAF50" />
             </LinearLayout>
 
             <!-- Diesel -->
@@ -100,9 +96,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Diesel"
+                    android:text="@string/diesel_label"
                     android:textSize="12sp"
-                    android:alpha="0.7"/>
+                    android:alpha="0.7" />
                 <TextView
                     android:id="@+id/tvPriceDiesel"
                     android:layout_width="wrap_content"
@@ -110,33 +106,31 @@
                     android:text="-.--- €"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#2196F3"/> <!-- Blue color -->
+                    android:textColor="#2196F3" />
             </LinearLayout>
-
         </LinearLayout>
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"/>
+            android:layout_weight="1" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"/>
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/textViewSourceNotice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Data source: http://datacube.statistics.sk/"
+            android:text="@string/source_notice"
             android:textSize="12sp"
             android:gravity="center_horizontal"
             android:paddingTop="8dp"
-            android:alpha="0.5"/>
-
+            android:alpha="0.5" />
     </LinearLayout>
-
 </LinearLayout>

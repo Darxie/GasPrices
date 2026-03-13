@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_refresh"
+        android:title="@string/refresh_prices"
+        android:icon="@android:drawable/ic_menu_rotate"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_toggle_regression"
+        android:title="@string/toggle_trend_lines"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_share"
+        android:title="@string/share_prices"
+        android:icon="@android:drawable/ic_menu_share"
+        app:showAsAction="never" />
+
+</menu>

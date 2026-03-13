@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+keystore.properties
+firebase.properties
+/distribution/*.json
+/keystore/
+*.jks
+*.keystore

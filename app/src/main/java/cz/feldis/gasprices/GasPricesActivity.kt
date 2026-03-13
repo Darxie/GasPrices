@@ -1,230 +1,287 @@
 package cz.feldis.gasprices
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
-import android.view.View
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.ProgressBar
-import android.widget.Switch
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.lifecycle.Observer
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.AxisBase
 import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.utils.ColorTemplate
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.utils.MPPointF
 import cz.feldis.gasprices.models.GasPricesResponse
 import cz.feldis.gasprices.utils.RegressionCalculator
+import java.util.Locale
 
 class GasPricesActivity : AppCompatActivity() {
-    private lateinit var viewModel: GasPriceViewModel
+    private lateinit var toolbar: Toolbar
     private lateinit var statusTextView: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var lineChart: LineChart
-    private lateinit var switchDarkMode: Switch
-    
-    // Header Price TextViews
     private lateinit var tvPrice95: TextView
     private lateinit var tvPrice98: TextView
     private lateinit var tvPriceDiesel: TextView
 
+    private lateinit var viewModel: GasPriceViewModel
+
+    private var latestResponse: GasPricesResponse? = null
+    private var showRegressionLines = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         setTheme(R.style.Theme_GasPrices)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gas_prices)
 
-        // Initialize UI components
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
         statusTextView = findViewById(R.id.textViewStatus)
         progressBar = findViewById(R.id.progressBar)
         lineChart = findViewById(R.id.chart)
-        switchDarkMode = findViewById(R.id.switchDarkMode)
-        
         tvPrice95 = findViewById(R.id.tvPrice95)
         tvPrice98 = findViewById(R.id.tvPrice98)
         tvPriceDiesel = findViewById(R.id.tvPriceDiesel)
-        
-        setupDarkModeSwitch()
+
         setupChart()
 
-        val apiService = ServiceBuilder.apiService // Make sure ServiceBuilder is properly initialized
+        val apiService = ServiceBuilder.apiService
         val repository = GasPriceRepository(apiService)
-
-        // Initialize ViewModel - often done via ViewModelProviders or an injection framework
         viewModel = ViewModelProvider(this, GasPriceViewModelFactory(repository))[GasPriceViewModel::class.java]
 
-        viewModel.gasPrices.observe(this, Observer { response ->
-            progressBar.visibility = View.GONE // Hide the progress bar
-
-            if (response != null) {
-                // Update your adapter and refresh the RecyclerView
-                statusTextView.text = "${response.label}\nUpdated:  ${response.update}"
-                
-                // Update header prices and chart
-                updateHeaderPrices(response.value)
-                setLineChartData(response)
-
-            } else {
-                statusTextView.text = "Failed to load data."
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading) ProgressBar.VISIBLE else ProgressBar.GONE
+            if (isLoading) {
+                statusTextView.text = getString(R.string.loading_status)
             }
-        })
+        }
 
-        progressBar.visibility = View.VISIBLE
-        viewModel.loadGasPrices()
-    }
-    
-    private fun updateHeaderPrices(values: List<Float?>) {
-        // The values list is ordered newest to oldest.
-        // Index 0 = 95 Octane (Newest)
-        // Index 1 = 98 Octane (Newest)
-        // Index 2 = Diesel (Newest)
-        
-        val price95 = values.getOrNull(0)
-        val price98 = values.getOrNull(1)
-        val priceDiesel = values.getOrNull(2)
-
-        tvPrice95.text = price95?.let { String.format("%.3f €", it) } ?: "-.--- €"
-        tvPrice98.text = price98?.let { String.format("%.3f €", it) } ?: "-.--- €"
-        tvPriceDiesel.text = priceDiesel?.let { String.format("%.3f €", it) } ?: "-.--- €"
-    }
-    
-    private fun setupDarkModeSwitch() {
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        switchDarkMode.isChecked = currentNightMode == Configuration.UI_MODE_NIGHT_YES
-
-        switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrBlank()) {
+                statusTextView.text = error
             }
+        }
+
+        viewModel.gasPrices.observe(this) { response ->
+            if (response == null) {
+                return@observe
+            }
+            latestResponse = response
+            statusTextView.text = "${response.label}\n${getString(R.string.updated_label, response.update)}"
+            updateHeaderPrices(response.value)
+            displayChartData(response)
+        }
+
+        refreshPrices()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_gas_prices, menu)
+        menu?.findItem(R.id.action_toggle_regression)?.isChecked = showRegressionLines
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_refresh -> {
+                refreshPrices()
+                true
+            }
+            R.id.action_toggle_regression -> {
+                showRegressionLines = !showRegressionLines
+                item.isChecked = showRegressionLines
+                latestResponse?.let { displayChartData(it) }
+                true
+            }
+            R.id.action_share -> {
+                shareLatestPrices()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun setLineChartData(gasPricesResponse: GasPricesResponse) {
+    private fun refreshPrices() {
+        statusTextView.text = getString(R.string.loading_status)
+        viewModel.loadGasPrices()
+    }
+
+    private fun shareLatestPrices() {
+        val response = latestResponse
+        if (response == null) {
+            statusTextView.text = getString(R.string.data_not_ready_message)
+            return
+        }
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+            putExtra(Intent.EXTRA_TEXT, buildShareText(response))
+        }
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_prompt)))
+    }
+
+    private fun buildShareText(response: GasPricesResponse): String {
+        val latestWeekLabel = response.dimension.sp0207ts_tyz.category.label.values.firstOrNull() ?: ""
+        val latestPrices = latestAvailableFuelPrices(response.value)
+
+        return buildString {
+            appendLine(response.label)
+            if (latestWeekLabel.isNotBlank()) {
+                appendLine(latestWeekLabel)
+            }
+            appendLine("${getString(R.string.octane_95_label)}: ${formatPrice(latestPrices.gasoline95)} EUR/l")
+            appendLine("${getString(R.string.octane_98_label)}: ${formatPrice(latestPrices.gasoline98)} EUR/l")
+            appendLine("${getString(R.string.diesel_label)}: ${formatPrice(latestPrices.diesel)} EUR/l")
+            appendLine(getString(R.string.updated_label, response.update))
+            appendLine(getString(R.string.source_label, response.href))
+        }.trim()
+    }
+
+    private fun displayChartData(gasPricesResponse: GasPricesResponse) {
+        latestResponse = gasPricesResponse
         val allWeeksLabels = gasPricesResponse.dimension.sp0207ts_tyz.category.label.values.toList()
-        val numWeeks = allWeeksLabels.size
+        val fullWeeksLabels = allWeeksLabels.reversed()
+        val numWeeks = fullWeeksLabels.size
 
         if (numWeeks == 0) {
-            statusTextView.text = "No data available to display."
+            statusTextView.text = getString(R.string.no_data_available)
             lineChart.clear()
             lineChart.invalidate()
             return
         }
 
-        // Reverse allWeeksLabels to have oldest week at index 0 and newest at numWeeks-1
-        // Also extract only the date range from the label: "39. week (22.9.2025-28.9.2025)" -> "22.9.2025-28.9.2025"
-        val weeksLabels = allWeeksLabels.reversed().map { label ->
+        val weeksLabels = fullWeeksLabels.map { label ->
             if (label.contains("(") && label.contains(")")) {
                 label.substringAfter("(").substringBefore(")")
             } else {
                 label
             }
         }
-        val values = gasPricesResponse.value
 
+        val values = gasPricesResponse.value
         val entries95 = createEntries(values, 0, numWeeks)
         val entries98 = createEntries(values, 1, numWeeks)
         val entriesDiesel = createEntries(values, 2, numWeeks)
 
-        // Determine text color based on night mode
         val isNightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val chartTextColor = if (isNightMode) Color.WHITE else Color.BLACK
 
-        // Colors matching the dashboard header
-        val color95 = Color.parseColor("#FFC107") // Amber
-        val color98 = Color.parseColor("#4CAF50") // Green
-        val colorDiesel = Color.parseColor("#2196F3") // Blue
+        val color95 = Color.parseColor("#FFC107")
+        val color98 = Color.parseColor("#4CAF50")
+        val colorDiesel = Color.parseColor("#2196F3")
 
-        val dataSet95 = LineDataSet(entries95, "95 Octane").apply {
-            color = color95
-            lineWidth = 5f
-            setDrawValues(true)
-            valueTextColor = chartTextColor
+        val dataSet95 = createLineDataSet(entries95, getString(R.string.octane_95_label), color95, chartTextColor)
+        val dataSet98 = createLineDataSet(entries98, getString(R.string.octane_98_label), color98, chartTextColor)
+        val dataSetDiesel = createLineDataSet(entriesDiesel, getString(R.string.diesel_label), colorDiesel, chartTextColor)
+
+        val lineData = LineData().apply {
+            addDataSet(dataSet95)
+            if (showRegressionLines && entries95.isNotEmpty()) {
+                addDataSet(calculateRegressionLine(entries95, dataSet95.color))
+            }
+            addDataSet(dataSet98)
+            if (showRegressionLines && entries98.isNotEmpty()) {
+                addDataSet(calculateRegressionLine(entries98, dataSet98.color))
+            }
+            addDataSet(dataSetDiesel)
+            if (showRegressionLines && entriesDiesel.isNotEmpty()) {
+                addDataSet(calculateRegressionLine(entriesDiesel, dataSetDiesel.color))
+            }
+            setValueTextColor(chartTextColor)
         }
-        val dataSet98 = LineDataSet(entries98, "98 Octane").apply {
-            color = color98
-            lineWidth = 5f
-            setDrawValues(true)
-            valueTextColor = chartTextColor
-        }
-        val dataSetDiesel = LineDataSet(entriesDiesel, "Diesel").apply {
-            color = colorDiesel
-            lineWidth = 5f
-            setDrawValues(true)
-            valueTextColor = chartTextColor
-        }
-
-        // Use entries directly for regression calculation
-        val regressionDataSet95 = calculateRegressionLine(entries95, dataSet95.color)
-        val regressionDataSet98 = calculateRegressionLine(entries98, dataSet98.color)
-        val regressionDataSetDiesel = calculateRegressionLine(entriesDiesel, dataSetDiesel.color)
-
-        val lineData = LineData()
-        lineData.addDataSet(dataSet95)
-        lineData.addDataSet(regressionDataSet95)
-
-        lineData.addDataSet(dataSet98)
-        lineData.addDataSet(regressionDataSet98)
-
-        lineData.addDataSet(dataSetDiesel)
-        lineData.addDataSet(regressionDataSetDiesel)
-        
-        // Ensure values use the correct text color
-        lineData.setValueTextColor(chartTextColor)
 
         lineChart.data = lineData
         lineChart.xAxis.valueFormatter = WeekAxisValueFormatter(weeksLabels)
-        
-        // Force 5 labels
+        lineChart.marker = GasPriceMarkerView(
+            context = this,
+            weeksLabels = fullWeeksLabels
+        )
         lineChart.xAxis.setLabelCount(5, true)
-        
-        // Disable clipping avoidance to prevent overlapping labels
-        lineChart.xAxis.setAvoidFirstLastClipping(false)
-        
+        lineChart.xAxis.setAxisMinimum(-0.5f)
+        lineChart.xAxis.setAxisMaximum((numWeeks - 0.5f).coerceAtLeast(0f))
         lineChart.xAxis.granularity = 1f
         lineChart.xAxis.labelRotationAngle = -45f
-        
-        // Add padding to axis range so first/last labels are not cut off by screen edge
-        lineChart.xAxis.setAxisMinimum(-0.5f)
-        lineChart.xAxis.setAxisMaximum(numWeeks - 0.5f)
-        
         lineChart.invalidate()
     }
+
+    private fun createLineDataSet(entries: List<Entry>, label: String, color: Int, valueTextColor: Int): LineDataSet {
+        return LineDataSet(entries, label).apply {
+            this.color = color
+            lineWidth = 5f
+            setDrawValues(true)
+            this.valueTextColor = valueTextColor
+        }
+    }
+
+    private fun updateHeaderPrices(values: List<Float?>) {
+        val latestPrices = latestAvailableFuelPrices(values)
+        tvPrice95.text = formatPrice(latestPrices.gasoline95, addCurrency = true)
+        tvPrice98.text = formatPrice(latestPrices.gasoline98, addCurrency = true)
+        tvPriceDiesel.text = formatPrice(latestPrices.diesel, addCurrency = true)
+    }
+
+    private fun latestAvailableFuelPrices(values: List<Float?>): FuelPriceTriple {
+        val groupCount = values.size / 3
+        for (groupIndex in 0 until groupCount) {
+            val baseIndex = groupIndex * 3
+            val price95 = values.getOrNull(baseIndex)
+            val price98 = values.getOrNull(baseIndex + 1)
+            val priceDiesel = values.getOrNull(baseIndex + 2)
+            if (price95 != null || price98 != null || priceDiesel != null) {
+                return FuelPriceTriple(price95, price98, priceDiesel)
+            }
+        }
+        return FuelPriceTriple(null, null, null)
+    }
+
+    private fun formatPrice(value: Float?, addCurrency: Boolean = false): String {
+        return value?.let {
+            val formatted = String.format(Locale.getDefault(), "%.3f", it)
+            if (addCurrency) "$formatted €" else formatted
+        } ?: getString(R.string.not_available_label)
+    }
+
+    private data class FuelPriceTriple(val gasoline95: Float?, val gasoline98: Float?, val diesel: Float?)
 
     private fun createEntries(prices: List<Float?>, typeIndex: Int, numWeeks: Int): List<Entry> {
         val entries = prices.mapIndexedNotNull { index, price ->
             if (index % 3 == typeIndex) {
-                // The API provides data from newest to oldest. We want oldest on x=0 and newest on x=numWeeks-1.
-                // groupIndex 0 is the newest week, groupIndex numWeeks-1 is the oldest week.
-                val groupIndex = (index / 3)
+                val groupIndex = index / 3
                 val xValue = (numWeeks - 1) - groupIndex.toFloat()
                 price?.let { Entry(xValue, it) }
             } else {
                 null
             }
         }
-        // MPAndroidChart requires entries to be sorted by x-value ascending
         return entries.sortedBy { it.x }
     }
 
     private fun setupChart() {
         val isNightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val chartTextColor = if (isNightMode) Color.WHITE else Color.BLACK
-        
+
         lineChart.apply {
             description.isEnabled = false
             setScaleEnabled(true)
             setTouchEnabled(true)
             setPinchZoom(true)
-            setDrawGridBackground(false) // Cleaner look, usually better for dark mode too
+            setDrawGridBackground(false)
             setDragEnabled(true)
-            
             xAxis.textColor = chartTextColor
             axisLeft.textColor = chartTextColor
             axisRight.textColor = chartTextColor
@@ -240,30 +297,49 @@ class GasPricesActivity : AppCompatActivity() {
     }
 
     fun calculateRegressionLine(dataPoints: List<Entry>, color: Int): LineDataSet {
-        // Calculate slope and intercept using the helper class
         val result = RegressionCalculator.calculateSlopeAndIntercept(dataPoints)
-        val slope = result.slope
-        val intercept = result.intercept
-
-        val regressionEntries = dataPoints.map { Entry(it.x, (slope * it.x + intercept)) }
-        val regressionDataSet = LineDataSet(regressionEntries, null)
-        regressionDataSet.form = Legend.LegendForm.NONE // Hide from legend
-        regressionDataSet.setDrawCircles(false)
-        regressionDataSet.color = color // Use the provided color for the regression line
-        regressionDataSet.lineWidth = 3f // Increased width for visibility
-        regressionDataSet.setDrawValues(false)
-        regressionDataSet.enableDashedLine(10f, 5f, 0f)
-
-        return regressionDataSet
+        val regressionEntries = dataPoints.map { Entry(it.x, (result.slope * it.x + result.intercept)) }
+        return LineDataSet(regressionEntries, null).apply {
+            form = Legend.LegendForm.NONE
+            setDrawCircles(false)
+            this.color = color
+            lineWidth = 3f
+            setDrawValues(false)
+            isHighlightEnabled = false
+            enableDashedLine(10f, 5f, 0f)
+        }
     }
 
-    private fun getEntriesFromDataSet(dataSet: LineDataSet): MutableList<Entry> {
-        val entries: MutableList<Entry> = mutableListOf()
-        for (index in 0 until dataSet.entryCount) {
-            dataSet.getEntryForIndex(index)?.let { entry ->
-                entries.add(entry)
+    private inner class GasPriceMarkerView(
+        context: android.content.Context,
+        private val weeksLabels: List<String>
+    ) : MarkerView(context, R.layout.marker_gas_price) {
+        private val markerText: TextView = findViewById(R.id.tvMarkerText)
+
+        override fun refreshContent(e: Entry?, highlight: Highlight?) {
+            if (e == null || highlight == null) {
+                markerText.text = ""
+                super.refreshContent(e, highlight)
+                return
             }
+
+            val weekIndex = e.x.toInt().coerceIn(0, weeksLabels.lastIndex)
+            val weekLabel = weeksLabels[weekIndex]
+            val datasetLabel = lineChart.lineData?.getDataSetByIndex(highlight.dataSetIndex)?.label
+                ?: getString(R.string.price_label)
+            val valueLabel = formatPrice(e.y)
+
+            markerText.text = getString(
+                R.string.marker_week_value_template,
+                datasetLabel,
+                weekLabel,
+                valueLabel
+            )
+            super.refreshContent(e, highlight)
         }
-        return entries
+
+        override fun getOffset(): MPPointF {
+            return MPPointF(-(width / 2f), -height.toFloat() - 16f)
+        }
     }
 }

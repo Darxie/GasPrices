@@ -1,21 +1,27 @@
 package cz.feldis.gasprices
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import cz.feldis.gasprices.models.GasPricesResponse
-import cz.feldis.gasprices.models.Dimension
 import cz.feldis.gasprices.models.Category
 import cz.feldis.gasprices.models.CategoryDetail
+import cz.feldis.gasprices.models.Dimension
+import cz.feldis.gasprices.models.GasPricesResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.* // Import all static methods from Mockito
+import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
 import retrofit2.Response
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 @ExperimentalCoroutinesApi
 class GasPriceRepositoryTest {
@@ -26,107 +32,97 @@ class GasPriceRepositoryTest {
     @Mock
     private lateinit var mockApiService: ApiService
 
-    // Observer is no longer needed in Repository tests, as ViewModel now handles LiveData updates.
-    // private lateinit var mockObserver: Observer<GasPricesResponse?>
-
     private lateinit var repository: GasPriceRepository
 
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
         repository = GasPriceRepository(mockApiService)
-        // LiveData observation is now handled by ViewModel, not directly in Repository
-        // repository.gasPrices.observeForever(mockObserver)
     }
 
     @Test
-    fun fetchGasPrices_success_returnsResponse() = runTest {
-        // Given
-        val dummyResponse = GasPricesResponse(
-            version = "1.0",
-            categoryClass = "test_class",
-            label = "Test Label",
-            update = "Test Update",
-            href = "http://test.com",
-            dimension = Dimension(
-                sp0207ts_tyz = Category(
-                    label = "Dummy Label for sp0207ts_tyz",
-                    note = "",
-                    category = CategoryDetail(
-                        index = emptyMap(),
-                        label = mapOf(
-                            "week_1" to "1. week (01.01.2023-07.01.2023)"
-                        )
-                    )
-                ),
-                sp0207ts_ukaz = Category(
-                    label = "Dummy Label for sp0207ts_ukaz",
-                    note = "",
-                    category = CategoryDetail(emptyMap(), emptyMap())
-                ),
-                sp0207ts_data = Category(
-                    label = "Dummy Label for sp0207ts_data",
-                    note = "",
-                    category = CategoryDetail(emptyMap(), emptyMap())
-                )
-            ),
-            value = listOf(1.5f)
-        )
-        `when`(mockApiService.getGasPrices(anyString()))
-            .thenReturn(Response.success(dummyResponse))
+    fun fetchGasPrices_success_returnsResponse_andRequests30WeeksIncludingCurrentWeek() = runTest {
+        val response = dummyResponse()
+        var requestedWeeksCsv = ""
+        Mockito.`when`(mockApiService.getGasPrices(Mockito.anyString())).thenAnswer { invocation ->
+            requestedWeeksCsv = invocation.getArgument(0)
+            Response.success(response)
+        }
 
-        // When
         val result = repository.fetchGasPrices()
+        val requestedWeeks = requestedWeeksCsv.split(",")
+        val expectedCurrentWeek = LocalDate.now()
+            .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1L)
+            .format(DateTimeFormatter.ofPattern("yyyyww"))
 
-        // Then
-        verify(mockApiService).getGasPrices(anyString())
-        assertEquals(dummyResponse, result)
+        assertEquals(response, result)
+        Mockito.verify(mockApiService).getGasPrices(Mockito.anyString())
+        assertEquals(30, requestedWeeks.size)
+        assertEquals(expectedCurrentWeek, requestedWeeks.last())
+        assertTrue(requestedWeeks.all { it.matches(Regex("\\d{6}")) })
     }
 
-    @Test(expected = Exception::class)
-    fun fetchGasPrices_apiError_throwsException() = runTest {
-        // Given
+    @Test
+    fun fetchGasPrices_apiError_throwsExceptionWithBody() = runTest {
         val errorResponse = Response.error<GasPricesResponse>(
             404,
             "{\"message\":\"Not Found\"}".toResponseBody()
         )
-        `when`(mockApiService.getGasPrices(anyString()))
-            .thenReturn(errorResponse)
+        Mockito.`when`(mockApiService.getGasPrices(Mockito.anyString())).thenReturn(errorResponse)
 
-        // When
-        repository.fetchGasPrices()
-
-        // Then - exception is expected
-        verify(mockApiService).getGasPrices(anyString())
+        val exception = runCatching { repository.fetchGasPrices() }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception?.message?.contains("Not Found") == true)
     }
 
-    @Test(expected = Exception::class)
+    @Test
     fun fetchGasPrices_nullBody_throwsException() = runTest {
-        // Given
-        `when`(mockApiService.getGasPrices(anyString()))
-            .thenReturn(Response.success(null))
+        Mockito.`when`(mockApiService.getGasPrices(Mockito.anyString())).thenReturn(Response.success(null))
 
-        // When
-        repository.fetchGasPrices()
-
-        // Then - exception is expected
-        verify(mockApiService).getGasPrices(anyString())
+        val exception = runCatching { repository.fetchGasPrices() }.exceptionOrNull()
+        assertNotNull(exception)
+        assertNotNull(exception?.message)
     }
 
-    @Test(expected = Exception::class)
+    @Test
     fun fetchGasPrices_unsuccessfulResponse_throwsException() = runTest {
-        // Given
         val unsuccessfulResponse = Response.error<GasPricesResponse>(
-            500, // Internal Server Error
+            500,
             "{\"message\":\"Server Error\"}".toResponseBody()
         )
-        `when`(mockApiService.getGasPrices(anyString()))
-            .thenReturn(unsuccessfulResponse)
+        Mockito.`when`(mockApiService.getGasPrices(Mockito.anyString())).thenReturn(unsuccessfulResponse)
 
-        // When
-        repository.fetchGasPrices()
-
-        // Then - exception is expected
-        verify(mockApiService).getGasPrices(anyString())
+        val exception = runCatching { repository.fetchGasPrices() }.exceptionOrNull()
+        assertNotNull(exception)
+        assertTrue(exception?.message?.contains("Server Error") == true)
     }
+
+    private fun dummyResponse() = GasPricesResponse(
+        version = "1.0",
+        categoryClass = "test_class",
+        label = "Test Label",
+        update = "Test Update",
+        href = "http://test.com",
+        dimension = Dimension(
+            sp0207ts_tyz = Category(
+                label = "Dummy Label for sp0207ts_tyz",
+                note = "",
+                category = CategoryDetail(
+                    index = emptyMap(),
+                    label = mapOf("week_1" to "1. week (01.01.2023-07.01.2023)")
+                )
+            ),
+            sp0207ts_ukaz = Category(
+                label = "Dummy Label for sp0207ts_ukaz",
+                note = "",
+                category = CategoryDetail(emptyMap(), emptyMap())
+            ),
+            sp0207ts_data = Category(
+                label = "Dummy Label for sp0207ts_data",
+                note = "",
+                category = CategoryDetail(emptyMap(), emptyMap())
+            )
+        ),
+        value = listOf(1.5f)
+    )
 }
