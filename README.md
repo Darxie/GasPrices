@@ -29,6 +29,42 @@ Dáta o cenách palív sú získavané z oficiálneho zdroja:
 3.  **Synchronizujte Gradle:** Android Studio by mal automaticky vyzvať na synchronizáciu Gradle. Ak nie, kliknite na `File > Sync Project with Gradle Files`.
 4.  **Spustite aplikáciu:** Spustite aplikáciu na emulátore alebo fyzickom zariadení.
 
+## iOS verzia (Xcode)
+
+V repozitári je pripravená aj iOS implementácia v adresári `ios/`.
+
+1.  **Požiadavky:**
+    * Xcode 26+ (na macOS)
+    * `xcodegen` (nainštalujte cez `brew install xcodegen`)
+2.  **Vygenerujte projekt:**
+    ```bash
+    cd ios
+    xcodegen generate
+    ```
+3.  **Otvorte projekt v Xcode:**
+    ```bash
+    open GasPricesiOS.xcodeproj
+    ```
+4.  **Nastavte podpisovanie (Signing):**
+    * V targete `GasPricesiOS` nastavte svoj `Team`.
+    * Bundle identifier je predvolene `cz.feldis.gasprices.ios` (môžete ho zmeniť podľa potreby).
+5.  **Inštalácia na iPhone cez Xcode:**
+    * Pripojte iPhone káblom alebo cez Wi-Fi debugging.
+    * Vyberte zariadenie v Xcode a stlačte Run.
+    * Pri prvom spustení povoľte dôveryhodnosť developer certifikátu v nastaveniach iPhonu.
+
+### iOS testy
+
+Spustenie testov z terminálu:
+
+```bash
+cd ios
+xcodebuild -project GasPricesiOS.xcodeproj \
+  -scheme GasPricesiOS \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4' \
+  test
+```
+
 ## Verzovanie buildu
 
 Predvolené verzie sú nastavené v `app/build.gradle.kts`, ale pri release ich vieš prepísať cez Gradle parametre:

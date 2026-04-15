@@ -1,0 +1,59 @@
+name: GasPricesiOS
+options:
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.0"
+
+packages:
+  DGCharts:
+    url: https://github.com/ChartsOrg/Charts.git
+    from: 5.1.0
+
+targets:
+  GasPricesiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: GasPricesiOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.feldis.gasprices.ios
+        PRODUCT_NAME: GasPricesiOS
+        SWIFT_VERSION: 5.0
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0.0
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Gas Prices
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - package: DGCharts
+        product: DGCharts
+
+  GasPricesiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: GasPricesiOSTests
+    dependencies:
+      - target: GasPricesiOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: cz.feldis.gasprices.ios.tests
+
+schemes:
+  GasPricesiOS:
+    build:
+      targets:
+        GasPricesiOS: all
+        GasPricesiOSTests: [test]
+    test:
+      targets:
+        - GasPricesiOSTests
