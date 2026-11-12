@@ -15,6 +15,7 @@
 		51F9AF04F0020886FD59F0C2 /* Collection+Safe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52436CFF465F7C909F1B7B6A /* Collection+Safe.swift */; };
 		6B5BA252FEAD0860411ACB86 /* GasPriceRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E37FCCD4CD4796156C8DC83 /* GasPriceRepositoryTests.swift */; };
 		82EE50BC49E940AE8E3629D3 /* GasPricesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4EBC90902111568A2322A4 /* GasPricesViewModelTests.swift */; };
+		876D9EC1E064833DA4B5441E /* WeekAxisValueFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F894A7133C527D333DE6D1 /* WeekAxisValueFormatterTests.swift */; };
 		8AB890E59C3A4907F0162AA1 /* TestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7564270ABAC298BAAFFFBCB1 /* TestFixtures.swift */; };
 		8D7588A754F64817EA2DA9D3 /* GasPriceData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E14F74916BCE36ACDC2A51 /* GasPriceData.swift */; };
 		914F6E25DEEDC03C384E02F0 /* FuelPriceCSVParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00DE1375CC71613B7FDEA450 /* FuelPriceCSVParser.swift */; };
@@ -59,6 +60,7 @@
 		B0E14F74916BCE36ACDC2A51 /* GasPriceData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GasPriceData.swift; sourceTree = "<group>"; };
 		B7CF756F6B4E8CEEB702256A /* GasPriceTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GasPriceTransformer.swift; sourceTree = "<group>"; };
 		DDE5584C3164C8876D1B344A /* GasPriceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GasPriceRepository.swift; sourceTree = "<group>"; };
+		E8F894A7133C527D333DE6D1 /* WeekAxisValueFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekAxisValueFormatterTests.swift; sourceTree = "<group>"; };
 		FA3055D224AF888EB5781F40 /* ZipArchiveReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipArchiveReader.swift; sourceTree = "<group>"; };
 		FB12C61BF1324CEB04538419 /* GasPricesiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GasPricesiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -193,6 +195,7 @@
 				9D4EBC90902111568A2322A4 /* GasPricesViewModelTests.swift */,
 				00CFE8948F3D15F6DDD24CBB /* RegressionCalculatorTests.swift */,
 				7564270ABAC298BAAFFFBCB1 /* TestFixtures.swift */,
+				E8F894A7133C527D333DE6D1 /* WeekAxisValueFormatterTests.swift */,
 			);
 			path = GasPricesiOSTests;
 			sourceTree = "<group>";
@@ -304,6 +307,7 @@
 				82EE50BC49E940AE8E3629D3 /* GasPricesViewModelTests.swift in Sources */,
 				D1EF8278D77BDBFAFCA69A14 /* RegressionCalculatorTests.swift in Sources */,
 				8AB890E59C3A4907F0162AA1 /* TestFixtures.swift in Sources */,
+				876D9EC1E064833DA4B5441E /* WeekAxisValueFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -61,7 +61,7 @@ struct GasPriceLineChartView: UIViewRepresentable {
         lineData.setValueTextColor(chartTextColor)
         lineChart.data = lineData
 
-        lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(values: trimmedWeeksLabels)
+        lineChart.xAxis.valueFormatter = WeekAxisValueFormatter(labels: trimmedWeeksLabels)
         lineChart.xAxis.setLabelCount(5, force: true)
         lineChart.xAxis.axisMinimum = -0.5
         lineChart.xAxis.axisMaximum = max(Double(fullWeeksLabels.count) - 0.5, 0)
@@ -128,6 +128,26 @@ struct GasPriceLineChartView: UIViewRepresentable {
         regressionDataSet.lineDashLengths = [10, 5]
         regressionDataSet.lineDashPhase = 0
         return regressionDataSet
+    }
+
+    /// With a forced label count of 5 over -0.5...(n - 0.5), the axis asks for labels at
+    /// fractional positions (-0.5, 7, 14.5, 22, 29.5 for 30 weeks). DGCharts'
+    /// IndexAxisValueFormatter returns "" for any non-integer value, so only 2 labels showed.
+    /// Like the Android WeekAxisValueFormatter, truncate and clamp to the nearest week instead.
+    final class WeekAxisValueFormatter: AxisValueFormatter {
+        private let labels: [String]
+
+        init(labels: [String]) {
+            self.labels = labels
+        }
+
+        func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+            guard !labels.isEmpty else {
+                return ""
+            }
+            let index = min(max(Int(value), 0), labels.count - 1)
+            return labels[index]
+        }
     }
 
     final class Coordinator {

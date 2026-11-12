@@ -1,6 +1,6 @@
 # Gas Prices App
 
-Jednoduchá Android aplikácia na sledovanie historických priemerných cien pohonných hmôt na Slovensku. Aplikácia vizualizuje týždenné dáta z oficiálneho zdroja (Štatistický úrad SR) pomocou interaktívneho čiarového grafu a zobrazuje aktuálne trendy s regresnými čiarami.
+Jednoduchá Android a iOS aplikácia na sledovanie historických priemerných cien pohonných hmôt na Slovensku. Aplikácia vizualizuje týždenné dáta z oficiálneho zdroja (Štatistický úrad SR) pomocou interaktívneho čiarového grafu a zobrazuje aktuálne trendy s regresnými čiarami.
 
 ## Funkcie
 
@@ -16,18 +16,41 @@ Jednoduchá Android aplikácia na sledovanie historických priemerných cien poh
 ## Zdroj dát
 
 Dáta o cenách palív sú získavané z oficiálneho zdroja:
-[Štatistický úrad Slovenskej republiky - DATAcube (statdata.statistics.sk)](https://statdata.statistics.sk/public/ui/dc/), dataset `sp0207ts`
+[Štatistický úrad Slovenskej republiky - DATAcube (statdata.statistics.sk)](https://statdata.statistics.sk/public/ui/dc/), dataset `sp0207ts` (Priemerné ceny pohonných látok v SR - týždenne).
+
+Pôvodné API na `data.statistics.sk` už nefunguje. Obe aplikácie používajú open data API na `https://statdata.statistics.sk/public/api/dc`:
+
+| Endpoint | Účel |
+| --- | --- |
+| `GET /opendata/cube/dataset/sp0207ts/download?type=CSV&lang=EN` | ZIP s celým datasetom (`sp0207ts_CSV_EN.csv`, plus `structure.csv` a `codelists/`) |
+| `GET /public/sp0207ts/info` | Názov datasetu a čas poslednej aktualizácie (`nameEn`, `lastDataChange`), nepovinné |
+
+*   Parameter `lang` musí byť veľkými písmenami (`EN`, `SK`), parameter typu sa volá `type`.
+*   CSV obsahuje celú históriu od roku 2008 pre všetky druhy palív. API nevie filtrovať podľa týždňov, preto si aplikácia vyberie posledných 30 týždňov sama (zoskupuje podľa stĺpca `e_datefrom`).
+*   Sledované palivá (stĺpec `e_coicop_code`): Natural 95 = `CP_07202102`, Natural 98 = `CP_07202103`, Diesel = `CP_07202105`.
+*   CSV je výrazne menšie ako JSON export (`type=JSON`, ~6 MB po rozbalení), preto ho aplikácie používajú.
+*   iOS rozbaľuje ZIP vlastným čítačom (`ios/GasPricesiOS/Data/Support/ZipArchiveReader.swift`) nad frameworkom `Compression`, bez externých závislostí.
+
+Rýchla kontrola z terminálu:
+
+```bash
+curl -o sp0207ts.zip "https://statdata.statistics.sk/public/api/dc/opendata/cube/dataset/sp0207ts/download?type=CSV&lang=EN"
+```
 
 ## Nastavenie a spustenie
 
 1.  **Klonujte repozitár:**
     ```bash
-    git clone https://github.com/Darxie/gas_prices.git
-    cd gas_prices
+    git clone https://github.com/Darxie/GasPrices.git
+    cd GasPrices
     ```
 2.  **Otvorte v Android Studio:** Otvorte projekt v Android Studio.
 3.  **Synchronizujte Gradle:** Android Studio by mal automaticky vyzvať na synchronizáciu Gradle. Ak nie, kliknite na `File > Sync Project with Gradle Files`.
 4.  **Spustite aplikáciu:** Spustite aplikáciu na emulátore alebo fyzickom zariadení.
+5.  **Unit testy:**
+    ```bash
+    ./gradlew :app:testDebugUnitTest
+    ```
 
 ## iOS verzia (Xcode)
 
@@ -61,7 +84,7 @@ Spustenie testov z terminálu:
 cd ios
 xcodebuild -project GasPricesiOS.xcodeproj \
   -scheme GasPricesiOS \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4' \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
   test
 ```
 
