@@ -44,7 +44,7 @@ struct GasPricesView: View {
                 Group {
                     if let response = viewModel.latestResponse {
                         GasPriceLineChartView(
-                            response: response,
+                            data: response,
                             showRegressionLines: viewModel.showRegressionLines
                         )
                     } else {

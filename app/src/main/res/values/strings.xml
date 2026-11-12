@@ -3,7 +3,7 @@
     <string name="octane_95_label">95 Octane</string>
     <string name="octane_98_label">98 Octane</string>
     <string name="diesel_label">Diesel</string>
-    <string name="source_notice">Data source: http://datacube.statistics.sk/</string>
+    <string name="source_notice">Data source: https://statdata.statistics.sk/</string>
     <string name="refresh_prices">Refresh prices</string>
     <string name="toggle_trend_lines">Toggle trend lines</string>
     <string name="share_prices">Share latest prices</string>

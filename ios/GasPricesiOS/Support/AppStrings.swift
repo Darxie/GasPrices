@@ -5,7 +5,7 @@ enum AppStrings {
     static let octane95Label = "95 Octane"
     static let octane98Label = "98 Octane"
     static let dieselLabel = "Diesel"
-    static let sourceNotice = "Data source: http://datacube.statistics.sk/"
+    static let sourceNotice = "Data source: https://statdata.statistics.sk/"
     static let refreshPrices = "Refresh prices"
     static let toggleTrendLines = "Toggle trend lines"
     static let sharePrices = "Share latest prices"

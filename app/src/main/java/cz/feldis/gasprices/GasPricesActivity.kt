@@ -22,7 +22,8 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
-import cz.feldis.gasprices.models.GasPricesResponse
+import cz.feldis.gasprices.models.GasPriceData
+import cz.feldis.gasprices.models.WeeklyFuelPrices
 import cz.feldis.gasprices.utils.RegressionCalculator
 import java.util.Locale
 
@@ -37,7 +38,7 @@ class GasPricesActivity : AppCompatActivity() {
 
     private lateinit var viewModel: GasPriceViewModel
 
-    private var latestResponse: GasPricesResponse? = null
+    private var latestResponse: GasPriceData? = null
     private var showRegressionLines = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,8 +82,8 @@ class GasPricesActivity : AppCompatActivity() {
                 return@observe
             }
             latestResponse = response
-            statusTextView.text = "${response.label}\n${getString(R.string.updated_label, response.update)}"
-            updateHeaderPrices(response.value)
+            statusTextView.text = "${response.label}\n${getString(R.string.updated_label, response.updated)}"
+            updateHeaderPrices(response.weeks)
             displayChartData(response)
         }
 
@@ -135,9 +136,9 @@ class GasPricesActivity : AppCompatActivity() {
         startActivity(Intent.createChooser(shareIntent, getString(R.string.share_prompt)))
     }
 
-    private fun buildShareText(response: GasPricesResponse): String {
-        val latestWeekLabel = response.dimension.sp0207ts_tyz.category.label.values.firstOrNull() ?: ""
-        val latestPrices = latestAvailableFuelPrices(response.value)
+    private fun buildShareText(response: GasPriceData): String {
+        val latestWeekLabel = response.weeks.lastOrNull()?.let { fullWeekLabel(it) } ?: ""
+        val latestPrices = latestAvailableFuelPrices(response.weeks)
 
         return buildString {
             appendLine(response.label)
@@ -147,16 +148,16 @@ class GasPricesActivity : AppCompatActivity() {
             appendLine("${getString(R.string.octane_95_label)}: ${formatPrice(latestPrices.gasoline95)} EUR/l")
             appendLine("${getString(R.string.octane_98_label)}: ${formatPrice(latestPrices.gasoline98)} EUR/l")
             appendLine("${getString(R.string.diesel_label)}: ${formatPrice(latestPrices.diesel)} EUR/l")
-            appendLine(getString(R.string.updated_label, response.update))
-            appendLine(getString(R.string.source_label, response.href))
+            appendLine(getString(R.string.updated_label, response.updated))
+            appendLine(getString(R.string.source_label, response.sourceUrl))
         }.trim()
     }
 
-    private fun displayChartData(gasPricesResponse: GasPricesResponse) {
+    private fun displayChartData(gasPricesResponse: GasPriceData) {
         latestResponse = gasPricesResponse
-        val allWeeksLabels = gasPricesResponse.dimension.sp0207ts_tyz.category.label.values.toList()
-        val fullWeeksLabels = allWeeksLabels.reversed()
-        val numWeeks = fullWeeksLabels.size
+        val weeks = gasPricesResponse.weeks
+        val fullWeeksLabels = weeks.map { fullWeekLabel(it) }
+        val numWeeks = weeks.size
 
         if (numWeeks == 0) {
             statusTextView.text = getString(R.string.no_data_available)
@@ -165,18 +166,11 @@ class GasPricesActivity : AppCompatActivity() {
             return
         }
 
-        val weeksLabels = fullWeeksLabels.map { label ->
-            if (label.contains("(") && label.contains(")")) {
-                label.substringAfter("(").substringBefore(")")
-            } else {
-                label
-            }
-        }
+        val weeksLabels = weeks.map { "${formatDate(it.dateFrom)}-${formatDate(it.dateTo)}" }
 
-        val values = gasPricesResponse.value
-        val entries95 = createEntries(values, 0, numWeeks)
-        val entries98 = createEntries(values, 1, numWeeks)
-        val entriesDiesel = createEntries(values, 2, numWeeks)
+        val entries95 = createEntries(weeks) { it.gasoline95 }
+        val entries98 = createEntries(weeks) { it.gasoline98 }
+        val entriesDiesel = createEntries(weeks) { it.diesel }
 
         val isNightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val chartTextColor = if (isNightMode) Color.WHITE else Color.BLACK
@@ -228,25 +222,28 @@ class GasPricesActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateHeaderPrices(values: List<Float?>) {
-        val latestPrices = latestAvailableFuelPrices(values)
+    private fun updateHeaderPrices(weeks: List<WeeklyFuelPrices>) {
+        val latestPrices = latestAvailableFuelPrices(weeks)
         tvPrice95.text = formatPrice(latestPrices.gasoline95, addCurrency = true)
         tvPrice98.text = formatPrice(latestPrices.gasoline98, addCurrency = true)
         tvPriceDiesel.text = formatPrice(latestPrices.diesel, addCurrency = true)
     }
 
-    private fun latestAvailableFuelPrices(values: List<Float?>): FuelPriceTriple {
-        val groupCount = values.size / 3
-        for (groupIndex in 0 until groupCount) {
-            val baseIndex = groupIndex * 3
-            val price95 = values.getOrNull(baseIndex)
-            val price98 = values.getOrNull(baseIndex + 1)
-            val priceDiesel = values.getOrNull(baseIndex + 2)
-            if (price95 != null || price98 != null || priceDiesel != null) {
-                return FuelPriceTriple(price95, price98, priceDiesel)
-            }
-        }
-        return FuelPriceTriple(null, null, null)
+    private fun latestAvailableFuelPrices(weeks: List<WeeklyFuelPrices>): FuelPriceTriple {
+        val latest = weeks.lastOrNull { it.gasoline95 != null || it.gasoline98 != null || it.diesel != null }
+        return FuelPriceTriple(latest?.gasoline95, latest?.gasoline98, latest?.diesel)
+    }
+
+    /** e.g. "W44 2026 (26.10.2026-01.11.2026)" */
+    private fun fullWeekLabel(week: WeeklyFuelPrices): String =
+        "${week.week} ${week.year} (${formatDate(week.dateFrom, withYear = true)}-${formatDate(week.dateTo, withYear = true)})"
+
+    /** Converts ISO "2026-10-26" to "26.10." (or "26.10.2026" with year). */
+    private fun formatDate(isoDate: String, withYear: Boolean = false): String {
+        val parts = isoDate.split("-")
+        if (parts.size != 3) return isoDate
+        val (year, month, day) = parts
+        return if (withYear) "$day.$month.$year" else "$day.$month."
     }
 
     private fun formatPrice(value: Float?, addCurrency: Boolean = false): String {
@@ -258,18 +255,8 @@ class GasPricesActivity : AppCompatActivity() {
 
     private data class FuelPriceTriple(val gasoline95: Float?, val gasoline98: Float?, val diesel: Float?)
 
-    private fun createEntries(prices: List<Float?>, typeIndex: Int, numWeeks: Int): List<Entry> {
-        val entries = prices.mapIndexedNotNull { index, price ->
-            if (index % 3 == typeIndex) {
-                val groupIndex = index / 3
-                val xValue = (numWeeks - 1) - groupIndex.toFloat()
-                price?.let { Entry(xValue, it) }
-            } else {
-                null
-            }
-        }
-        return entries.sortedBy { it.x }
-    }
+    private fun createEntries(weeks: List<WeeklyFuelPrices>, price: (WeeklyFuelPrices) -> Float?): List<Entry> =
+        weeks.mapIndexedNotNull { index, week -> price(week)?.let { Entry(index.toFloat(), it) } }
 
     private fun setupChart() {
         val isNightMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES

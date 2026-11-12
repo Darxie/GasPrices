@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class GasPricesViewModelTests: XCTestCase {
     func testLoadGasPricesSuccessUpdatesState() async {
-        let repository = StubGasPriceRepository(result: .success(TestFixtures.sampleResponse()))
+        let repository = StubGasPriceRepository(result: .success(TestFixtures.sampleData()))
         let viewModel = GasPricesViewModel(repository: repository)
 
         viewModel.loadGasPrices()
@@ -41,13 +41,13 @@ final class GasPricesViewModelTests: XCTestCase {
 }
 
 private final class StubGasPriceRepository: GasPriceRepositoryProtocol {
-    let result: Result<GasPricesResponse, Error>
+    let result: Result<GasPriceData, Error>
 
-    init(result: Result<GasPricesResponse, Error>) {
+    init(result: Result<GasPriceData, Error>) {
         self.result = result
     }
 
-    func fetchGasPrices() async throws -> GasPricesResponse {
+    func fetchGasPrices() async throws -> GasPriceData {
         try result.get()
     }
 }
