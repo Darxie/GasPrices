@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 struct GasPriceLineChartView: UIViewRepresentable {
-    let response: GasPricesResponse
+    let data: GasPriceData
     let showRegressionLines: Bool
 
     func makeCoordinator() -> Coordinator {
@@ -18,7 +18,7 @@ struct GasPriceLineChartView: UIViewRepresentable {
     }
 
     func updateUIView(_ lineChart: LineChartView, context: Context) {
-        let labels = GasPriceTransformer.weekLabels(from: response)
+        let labels = GasPriceTransformer.weekLabels(from: data)
         let fullWeeksLabels = labels.full
         let trimmedWeeksLabels = labels.trimmed
 
@@ -27,10 +27,10 @@ struct GasPriceLineChartView: UIViewRepresentable {
             return
         }
 
-        let values = response.value
-        let entries95 = toChartEntries(GasPriceTransformer.createEntries(values: values, typeIndex: 0, numWeeks: fullWeeksLabels.count))
-        let entries98 = toChartEntries(GasPriceTransformer.createEntries(values: values, typeIndex: 1, numWeeks: fullWeeksLabels.count))
-        let entriesDiesel = toChartEntries(GasPriceTransformer.createEntries(values: values, typeIndex: 2, numWeeks: fullWeeksLabels.count))
+        let weeks = data.weeks
+        let entries95 = toChartEntries(GasPriceTransformer.createEntries(weeks: weeks) { $0.gasoline95 })
+        let entries98 = toChartEntries(GasPriceTransformer.createEntries(weeks: weeks) { $0.gasoline98 })
+        let entriesDiesel = toChartEntries(GasPriceTransformer.createEntries(weeks: weeks) { $0.diesel })
 
         let chartTextColor = UIColor.white
         let color95 = UIColor(red: 1.0, green: 0.7569, blue: 0.0275, alpha: 1.0)

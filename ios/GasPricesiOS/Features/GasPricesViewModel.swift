@@ -5,7 +5,7 @@ final class GasPricesViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var statusText = AppStrings.appName
-    @Published var latestResponse: GasPricesResponse?
+    @Published var latestResponse: GasPriceData?
     @Published var latestPrices = FuelPriceTriple(gasoline95: nil, gasoline98: nil, diesel: nil)
     @Published var showRegressionLines = true
 
@@ -45,7 +45,7 @@ final class GasPricesViewModel: ObservableObject {
             return nil
         }
 
-        return GasPriceTransformer.buildShareText(response: response)
+        return GasPriceTransformer.buildShareText(data: response)
     }
 
     func formattedHeaderPrice(_ value: Double?) -> String {
@@ -70,8 +70,8 @@ final class GasPricesViewModel: ObservableObject {
 
                 self.latestResponse = response
                 self.errorMessage = nil
-                self.statusText = "\(response.label)\n\(AppStrings.updatedLabel(response.update))"
-                self.latestPrices = GasPriceTransformer.latestAvailableFuelPrices(from: response.value)
+                self.statusText = "\(response.label)\n\(AppStrings.updatedLabel(response.updated))"
+                self.latestPrices = GasPriceTransformer.latestAvailableFuelPrices(from: response.weeks)
             } catch {
                 guard !Task.isCancelled else {
                     return

@@ -16,7 +16,7 @@ Jednoduchá Android aplikácia na sledovanie historických priemerných cien poh
 ## Zdroj dát
 
 Dáta o cenách palív sú získavané z oficiálneho zdroja:
-[Štatistický úrad Slovenskej republiky - Databáza Eurostat (datacube.statistics.sk)](http://datacube.statistics.sk/)
+[Štatistický úrad Slovenskej republiky - DATAcube (statdata.statistics.sk)](https://statdata.statistics.sk/public/ui/dc/), dataset `sp0207ts`
 
 ## Nastavenie a spustenie
 
