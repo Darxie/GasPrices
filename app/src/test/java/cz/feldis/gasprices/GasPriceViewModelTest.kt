@@ -1,10 +1,8 @@
 package cz.feldis.gasprices
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import cz.feldis.gasprices.models.Category
-import cz.feldis.gasprices.models.CategoryDetail
-import cz.feldis.gasprices.models.Dimension
-import cz.feldis.gasprices.models.GasPricesResponse
+import cz.feldis.gasprices.models.GasPriceData
+import cz.feldis.gasprices.models.WeeklyFuelPrices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -92,32 +90,12 @@ class GasPriceViewModelTest {
         assertEquals("Failed to load gas prices.", viewModel.errorMessage.value)
     }
 
-    private fun dummyResponse() = GasPricesResponse(
-        version = "1.0",
-        categoryClass = "test_class",
+    private fun dummyResponse() = GasPriceData(
         label = "Test Label",
-        update = "Test Update",
-        href = "http://test.com",
-        dimension = Dimension(
-            sp0207ts_tyz = Category(
-                label = "Dummy Label for sp0207ts_tyz",
-                note = "",
-                category = CategoryDetail(
-                    index = emptyMap(),
-                    label = mapOf("week_1" to "1. week (01.01.2023-07.01.2023)")
-                )
-            ),
-            sp0207ts_ukaz = Category(
-                label = "Dummy Label for sp0207ts_ukaz",
-                note = "",
-                category = CategoryDetail(emptyMap(), emptyMap())
-            ),
-            sp0207ts_data = Category(
-                label = "Dummy Label for sp0207ts_data",
-                note = "",
-                category = CategoryDetail(emptyMap(), emptyMap())
-            )
-        ),
-        value = listOf(1.5f, 1.6f, 1.7f)
+        updated = "06.11.2026 09:00",
+        sourceUrl = "http://test.com",
+        weeks = listOf(
+            WeeklyFuelPrices("2026", "W44", "2026-10-26", "2026-11-01", 1.5f, 1.6f, 1.7f)
+        )
     )
 }

@@ -7,48 +7,30 @@ struct FuelPriceTriple: Equatable {
 }
 
 enum GasPriceTransformer {
-    static func weekLabels(from response: GasPricesResponse) -> (trimmed: [String], full: [String]) {
-        let allWeeksLabels = response.dimension.sp0207ts_tyz.orderedLabels()
-        let fullWeeksLabels = Array(allWeeksLabels.reversed())
-        let trimmed = fullWeeksLabels.map(trimWeekLabel(_:))
-        return (trimmed, fullWeeksLabels)
+    /// Short axis labels ("26.10.-01.11.") and full marker labels ("W44 2026 (26.10.2026-01.11.2026)"),
+    /// both in chronological order.
+    static func weekLabels(from data: GasPriceData) -> (trimmed: [String], full: [String]) {
+        let trimmed = data.weeks.map { "\(formatDate($0.dateFrom))-\(formatDate($0.dateTo))" }
+        let full = data.weeks.map(fullWeekLabel(_:))
+        return (trimmed, full)
     }
 
-    static func latestWeekLabel(from response: GasPricesResponse) -> String? {
-        response.dimension.sp0207ts_tyz.orderedLabels().first
+    static func latestWeekLabel(from data: GasPriceData) -> String? {
+        data.weeks.last.map(fullWeekLabel(_:))
     }
 
-    static func latestAvailableFuelPrices(from values: [Double?]) -> FuelPriceTriple {
-        let groupCount = values.count / 3
-        for groupIndex in 0..<groupCount {
-            let baseIndex = groupIndex * 3
-            let price95: Double? = baseIndex < values.count ? values[baseIndex] : nil
-            let price98: Double? = (baseIndex + 1) < values.count ? values[baseIndex + 1] : nil
-            let priceDiesel: Double? = (baseIndex + 2) < values.count ? values[baseIndex + 2] : nil
-            if price95 != nil || price98 != nil || priceDiesel != nil {
-                return FuelPriceTriple(gasoline95: price95, gasoline98: price98, diesel: priceDiesel)
-            }
+    static func latestAvailableFuelPrices(from weeks: [WeeklyFuelPrices]) -> FuelPriceTriple {
+        guard let latest = weeks.last(where: { $0.gasoline95 != nil || $0.gasoline98 != nil || $0.diesel != nil }) else {
+            return FuelPriceTriple(gasoline95: nil, gasoline98: nil, diesel: nil)
         }
-
-        return FuelPriceTriple(gasoline95: nil, gasoline98: nil, diesel: nil)
+        return FuelPriceTriple(gasoline95: latest.gasoline95, gasoline98: latest.gasoline98, diesel: latest.diesel)
     }
 
-    static func createEntries(values: [Double?], typeIndex: Int, numWeeks: Int) -> [PriceEntry] {
-        let entries = values.enumerated().compactMap { index, price -> PriceEntry? in
-            guard index % 3 == typeIndex else {
-                return nil
-            }
-
-            guard let price else {
-                return nil
-            }
-
-            let groupIndex = index / 3
-            let xValue = Double(numWeeks - 1) - Double(groupIndex)
-            return PriceEntry(x: xValue, y: price)
+    /// One entry per week that has a price; x is the week's index in chronological order.
+    static func createEntries(weeks: [WeeklyFuelPrices], price: (WeeklyFuelPrices) -> Double?) -> [PriceEntry] {
+        weeks.enumerated().compactMap { index, week in
+            price(week).map { PriceEntry(x: Double(index), y: $0) }
         }
-
-        return entries.sorted { $0.x < $1.x }
     }
 
     static func formatPrice(_ value: Double?, addCurrency: Bool = false, locale: Locale = .current) -> String {
@@ -66,32 +48,34 @@ enum GasPriceTransformer {
         return addCurrency ? "\(formatted) \u{20AC}" : formatted
     }
 
-    static func buildShareText(response: GasPricesResponse, locale: Locale = .current) -> String {
-        let latestPrices = latestAvailableFuelPrices(from: response.value)
+    static func buildShareText(data: GasPriceData, locale: Locale = .current) -> String {
+        let latestPrices = latestAvailableFuelPrices(from: data.weeks)
         var lines = [String]()
-        lines.append(response.label)
+        lines.append(data.label)
 
-        if let latestWeekLabel = latestWeekLabel(from: response), !latestWeekLabel.isEmpty {
+        if let latestWeekLabel = latestWeekLabel(from: data), !latestWeekLabel.isEmpty {
             lines.append(latestWeekLabel)
         }
 
         lines.append("\(AppStrings.octane95Label): \(formatPrice(latestPrices.gasoline95, locale: locale)) EUR/l")
         lines.append("\(AppStrings.octane98Label): \(formatPrice(latestPrices.gasoline98, locale: locale)) EUR/l")
         lines.append("\(AppStrings.dieselLabel): \(formatPrice(latestPrices.diesel, locale: locale)) EUR/l")
-        lines.append(AppStrings.updatedLabel(response.update))
-        lines.append(AppStrings.sourceLabel(response.href))
+        lines.append(AppStrings.updatedLabel(data.updated))
+        lines.append(AppStrings.sourceLabel(data.sourceURL))
 
         return lines.joined(separator: "\n")
     }
 
-    private static func trimWeekLabel(_ label: String) -> String {
-        guard let openParen = label.firstIndex(of: "("),
-              let closeParen = label.lastIndex(of: ")"),
-              openParen < closeParen else {
-            return label
-        }
+    static func fullWeekLabel(_ week: WeeklyFuelPrices) -> String {
+        "\(week.week) \(week.year) (\(formatDate(week.dateFrom, withYear: true))-\(formatDate(week.dateTo, withYear: true)))"
+    }
 
-        let start = label.index(after: openParen)
-        return String(label[start..<closeParen])
+    /// Converts ISO "2026-10-26" to "26.10." (or "26.10.2026" with year).
+    static func formatDate(_ isoDate: String, withYear: Bool = false) -> String {
+        let parts = isoDate.split(separator: "-")
+        guard parts.count == 3 else {
+            return isoDate
+        }
+        return withYear ? "\(parts[2]).\(parts[1]).\(parts[0])" : "\(parts[2]).\(parts[1])."
     }
 }

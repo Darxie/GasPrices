@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import cz.feldis.gasprices.BuildConfig
 
 object ServiceBuilder {
-    private const val BASE_URL = "https://data.statistics.sk/"
+    private const val BASE_URL = "https://statdata.statistics.sk/"
 
     private fun getRetrofit() = Retrofit.Builder()
         .baseUrl(BASE_URL)
@@ -16,7 +16,7 @@ object ServiceBuilder {
         .client(OkHttpClient.Builder().apply {
             if (BuildConfig.DEBUG) {
                 val loggingInterceptor = HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
+                    level = HttpLoggingInterceptor.Level.HEADERS
                 }
                 addInterceptor(loggingInterceptor)
             }
